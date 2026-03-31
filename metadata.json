@@ -1,0 +1,5 @@
+{
+  "name": "EchoScribe - Real-time Speech-to-Text",
+  "description": "A powerful real-time speech-to-text application that transcribes your voice word by word using Gemini AI.",
+  "requestFramePermissions": ["microphone"]
+}
