@@ -90,7 +90,13 @@ export default function App() {
       setIsConnecting(true);
       setError(null);
 
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const apiKey = process.env.GEMINI_API_KEY;
+      
+      if (!apiKey || apiKey === 'undefined' || apiKey === 'MY_GEMINI_API_KEY') {
+        throw new Error('Gemini API Key is missing. Please set the GEMINI_API_KEY environment variable in your Vercel project settings.');
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
       
       const sessionPromise = ai.live.connect({
         model: "gemini-3.1-flash-live-preview",
