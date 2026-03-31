@@ -87,12 +87,20 @@ export default function App() {
 
   const startRecording = async () => {
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Your browser does not support microphone access. Please try a different browser.");
+      }
+
+      // 1. Get Microphone Access First
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
       setIsConnecting(true);
       setError(null);
 
       const apiKey = process.env.GEMINI_API_KEY;
       
-      if (!apiKey || apiKey === 'undefined' || apiKey === 'MY_GEMINI_API_KEY') {
+      if (!apiKey || apiKey === 'undefined' || apiKey === 'AIzaSyBL3_7iYOfpb72vPwXQ6DtEeN5XWcL_6bA') {
         throw new Error('Gemini API Key is missing. Please set the GEMINI_API_KEY environment variable in your Vercel project settings.');
       }
 
@@ -134,7 +142,7 @@ export default function App() {
           },
           onerror: (err) => {
             console.error("Live session error:", err);
-            setError("Connection error. Please try again.");
+            setError("Connection error. Please check your API key and network.");
             stopRecording();
           },
           onclose: () => {
@@ -146,10 +154,7 @@ export default function App() {
 
       sessionRef.current = sessionPromise;
 
-      // Setup Audio
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      
+      // Setup Audio Nodes
       const audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
       audioContextRef.current = audioContext;
       
@@ -223,9 +228,26 @@ export default function App() {
       analyser.connect(processor);
       processor.connect(audioContext.destination);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to start recording:", err);
-      setError("Microphone access denied or connection failed.");
+      
+      let errorMessage = "An unexpected error occurred.";
+      
+      if (err instanceof Error) {
+        if (err.name === 'NotAllowedError') {
+          errorMessage = "Microphone access was denied. Please enable microphone permissions in your browser settings.";
+        } else if (err.name === 'NotFoundError') {
+          errorMessage = "No microphone was found on your device.";
+        } else if (err.name === 'NotReadableError') {
+          errorMessage = "Your microphone is already in use by another application.";
+        } else if (err.message.includes('API Key')) {
+          errorMessage = err.message;
+        } else {
+          errorMessage = `Connection failed: ${err.message}`;
+        }
+      }
+      
+      setError(errorMessage);
       setIsConnecting(false);
       stopRecording();
     }
